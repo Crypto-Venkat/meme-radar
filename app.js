@@ -109,7 +109,7 @@ function handleWSEvent(data){
       liquidity:0,
       created:Date.now(),
       url:'',
-      score:rand(60,85),
+      score:99, // Migrations are instantly 99 score
       isNew:false,
       isMigration:true,
       source:'pumpportal-ws'
@@ -734,7 +734,12 @@ setInterval(async()=>{
     const d = new Date();
     const dateStr = d.toLocaleString('en-US', { day: '2-digit', month: 'short', hour: 'numeric', minute: '2-digit', hour12: true }) + ' IST';
     
-    const tgMsg = `<b>Meme Radar - Calls</b> 📈\n🪙 COIN: ${hot.name}\n🎯 SCORE: ${hot.score}/100\n🔥 CONVICTION: HIGH\n💰 MARKETCAP: ${fmtUsd(hot.mcap)}\n📋 CA: <code>${hot.address}</code>\n\n🔗 GMGN:\nhttps://gmgn.ai/sol/token/${hot.address}\n🧭 AXIOM:\nhttps://axiom.trade/t/${hot.address}\n📊 DEX:\nhttps://dexscreener.com/solana/${hot.address}\n\n🕒 DETECTED: ${dateStr}\n@MemeRadarBot`;
+    let smartMoneyBadge = '';
+    if (hot.volume > 500000 && hot.liquidity > 50000) {
+      smartMoneyBadge = `\n🧠 <b>SMART MONEY / KOLS DETECTED</b>`;
+    }
+
+    const tgMsg = `<b>Meme Radar - Calls</b> 📈\n🪙 COIN: ${hot.name}\n🎯 SCORE: ${hot.score}/100\n🔥 CONVICTION: HIGH\n💰 MARKETCAP: ${fmtUsd(hot.mcap)}\n📋 CA: <code>${hot.address}</code>${smartMoneyBadge}\n\n🔗 GMGN:\nhttps://gmgn.ai/sol/token/${hot.address}\n🧭 AXIOM:\nhttps://axiom.trade/t/${hot.address}\n📊 DEX:\nhttps://dexscreener.com/solana/${hot.address}\n\n🕒 DETECTED: ${dateStr}\n@MemeRadarBot`;
     
     sendTelegramAlert(tgMsg);
     saveHighConviction(hot);
