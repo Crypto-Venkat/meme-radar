@@ -345,23 +345,8 @@ function mapPairToToken(p){
 }
 
 // Fetch brand new token profiles + get their pair data
-async function fetchNewTokens(){
-  const [profiles,boosts]=await Promise.all([
-    fetchJSON(API.dexProfiles),
-    fetchJSON(API.dexBoosts)
-  ]);
-  // Get solana token addresses from profiles & boosts
-  const addresses=new Set();
-  if(Array.isArray(profiles))profiles.filter(p=>p.chainId==='solana').slice(0,15).forEach(p=>addresses.add(p.tokenAddress));
-  if(Array.isArray(boosts))boosts.filter(p=>p.chainId==='solana').slice(0,15).forEach(p=>addresses.add(p.tokenAddress));
-  if(addresses.size===0)return[];
-  // Fetch pair data for these tokens (batch up to 30)
-  const addrList=[...addresses].slice(0,30).join(',');
-  const pairData=await fetchJSON(`https://api.dexscreener.com/tokens/v1/solana/${addrList}`);
-  if(!Array.isArray(pairData))return[];
-  const tokens=pairData.map(mapPairToToken).sort((a,b)=>b.created-a.created);
-  return tokens;
-}
+// DEPRECATED: Free DexScreener profiles API is rate-limited.
+// We now rely on real-time PumpPortal wsTokens instead!
 
 // Also search for very recent pump tokens
 async function fetchRecentPumpTokens(){
@@ -375,11 +360,11 @@ async function fetchRecentPumpTokens(){
     .map(mapPairToToken);
 }
 
-// Combined: merge new profiles + recent pumps, dedupe, sort newest first
+// Combined: merge real-time WS tokens + recent pumps, dedupe, sort newest first
 async function fetchTrendingTokens(){
-  const [newTokens,pumpTokens]=await Promise.all([fetchNewTokens(),fetchRecentPumpTokens()]);
+  const pumpTokens=await fetchRecentPumpTokens();
   const seen=new Set();
-  const all=[...newTokens,...pumpTokens].filter(t=>{
+  const all=[...wsTokens, ...pumpTokens].filter(t=>{
     if(seen.has(t.address))return false;
     seen.add(t.address);
     return true;
