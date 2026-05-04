@@ -53,6 +53,10 @@ let wsTokens=[];
 let wsConnected=false;
 let sessionLog=[]; // Real event log
 
+// Persistent lists
+let highConvictionList = JSON.parse(localStorage.getItem('cr_high_conviction')) || [];
+let migrationList = JSON.parse(localStorage.getItem('cr_migration_list')) || [];
+
 // ===== PUMPPORTAL WEBSOCKET (FREE - real-time new tokens + migrations) =====
 function initPumpPortalWS(){
   const ws=new WebSocket('wss://pumpportal.fun/api/data');
@@ -561,6 +565,7 @@ async function refreshScanner(){
   const tokens=await fetchTrendingTokens();
   if(!tokens.length)return;
   const tbody=document.getElementById('scanner-tbody');
+  if(!tbody) return;
   tbody.innerHTML=tokens.map(t=>{
     const sc=t.score>=85?'score-high':t.score>=65?'score-med':'score-low';
     const conv=t.score>=85?'HIGH':t.score>=65?'MED':'LOW';
@@ -577,15 +582,30 @@ async function refreshScanner(){
       <td><button class="btn-watch" onclick="this.textContent='✅ Watching'">👁 Watch</button></td>
     </tr>`}).join('');
 }
-refreshScanner();
 
-document.getElementById('btn-scan').addEventListener('click',async()=>{
-  const btn=document.getElementById('btn-scan');
-  btn.textContent='Scanning...';btn.disabled=true;
-  await refreshScanner();
-  btn.innerHTML='<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg> Scan Now';
-  btn.disabled=false;
-});
+// Initial migrations fetch if empty
+async function fetchInitialMigrations() {
+  if (migrationList.length > 0) return;
+  const data = await fetchJSON(API.dexSearch + 'raydium solana');
+  if (data && data.pairs) {
+    const pairs = data.pairs.filter(p => p.chainId === 'solana' && p.dexId === 'raydium').slice(0, 15);
+    pairs.forEach(p => {
+      const token = mapPairToToken(p);
+      if (!migrationList.find(t => t.address === token.address)) {
+        migrationList.push({
+          time: new Date(token.created || Date.now()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          name: token.name,
+          mcap: token.mcap,
+          address: token.address
+        });
+      }
+    });
+    localStorage.setItem('cr_migration_list', JSON.stringify(migrationList));
+    renderMigrations();
+  }
+}
+fetchInitialMigrations();
+
 
 // ===== EQUITY CHART - Live updating =====
 let equityChart=null;
@@ -753,8 +773,6 @@ setInterval(async()=>{
 },45000);
 
 // ===== HIGH CONVICTION MASTERLIST (PERSISTENT) =====
-let highConvictionList = JSON.parse(localStorage.getItem('cr_high_conviction')) || [];
-
 function saveHighConviction(token) {
   if (highConvictionList.find(t => t.address === token.address)) return;
   highConvictionList.unshift({
@@ -780,12 +798,9 @@ function renderHighConviction() {
       <td style="color:var(--green);font-weight:bold">${t.score}/100</td>
       <td>${fmtUsd(t.mcap)}</td>
       <td style="font-family:var(--mono);font-size:.7rem;max-width:120px;overflow:hidden;text-overflow:ellipsis;cursor:pointer" title="${t.address}" onclick="navigator.clipboard.writeText('${t.address}')">${t.address.slice(0,8)}...${t.address.slice(-6)}</td>
-      <td>
-        <a href="https://axiom.trade/t/${t.address}" target="_blank" class="feed-link feed-link-axiom">⚡ AXIOM</a> 
-        <a href="https://dexscreener.com/solana/${t.address}" target="_blank" class="feed-link">DEX</a>
       </td>
     </tr>`;
-  }).join('');
+  }).join('') || '<tr><td colspan="6" style="text-align:center;padding:2rem;color:var(--text3)">No high conviction tokens detected yet.</td></tr>';
 }
 
 document.getElementById('btn-clear-conviction')?.addEventListener('click', () => {
@@ -798,8 +813,6 @@ document.getElementById('btn-clear-conviction')?.addEventListener('click', () =>
 renderHighConviction();
 
 // ===== MIGRATION LIST (PERSISTENT) =====
-let migrationList = JSON.parse(localStorage.getItem('cr_migration_list')) || [];
-
 function saveMigration(token) {
   if (migrationList.find(t => t.address === token.address)) return;
   migrationList.unshift({
@@ -827,7 +840,7 @@ function renderMigrations() {
         <a href="https://dexscreener.com/solana/${t.address}" target="_blank" class="feed-link">DEX</a>
       </div>
     </td>
-  </tr>`).join('');
+  </tr>`).join('') || '<tr><td colspan="5" style="text-align:center;padding:2rem;color:var(--text3)">No migrations detected today. Waiting for live events...</td></tr>';
   
   const badge = document.getElementById('mig-badge');
   if (badge) badge.textContent = migrationList.length;
