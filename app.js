@@ -489,8 +489,9 @@ function showToast(token){
   const tgMsg = `<b>Meme Radar - Migrations</b> 🚀\n🪙 COIN: ${token.name}\n🎯 SCORE: ${token.score}/100\n🔥 CONVICTION: RAYDIUM\n💰 MARKETCAP: ${fmtUsd(token.mcap)}\n📋 CA: <code>${token.address}</code>\n\n🔗 GMGN:\nhttps://gmgn.ai/sol/token/${token.address}\n🧭 AXIOM:\nhttps://axiom.trade/t/${token.address}\n📊 DEX:\nhttps://dexscreener.com/solana/${token.address}\n\n🕒 DETECTED: ${dateStr}\n@MemeRadarBot`;
   sendTelegramAlert(tgMsg);
 
-  // Save to persistent High Conviction List
+  // Save to persistent lists
   saveHighConviction(token);
+  saveMigration(token);
 }
 
 // ===== SIGNALS PAGE - Real data with FILTERS =====
@@ -795,6 +796,57 @@ document.getElementById('btn-clear-conviction')?.addEventListener('click', () =>
   }
 });
 renderHighConviction();
+
+// ===== MIGRATION LIST (PERSISTENT) =====
+let migrationList = JSON.parse(localStorage.getItem('cr_migration_list')) || [];
+
+function saveMigration(token) {
+  if (migrationList.find(t => t.address === token.address)) return;
+  migrationList.unshift({
+    time: new Date().toLocaleString('en-US', { hour: '2-digit', minute: '2-digit' }),
+    name: token.name,
+    mcap: token.mcap,
+    address: token.address
+  });
+  localStorage.setItem('cr_migration_list', JSON.stringify(migrationList));
+  renderMigrations();
+}
+
+function renderMigrations() {
+  const tbody = document.getElementById('migrations-tbody');
+  if (!tbody) return;
+  tbody.innerHTML = migrationList.map(t => `<tr>
+    <td style="font-family:var(--mono);font-size:.8rem;color:var(--text2)">${t.time}</td>
+    <td><strong>${t.name}</strong> <span class="outcome-badge moon">MIGRATED</span></td>
+    <td>${fmtUsd(t.mcap)}</td>
+    <td style="font-family:var(--mono);font-size:.7rem;max-width:120px;overflow:hidden;text-overflow:ellipsis;cursor:pointer" title="${t.address}" onclick="navigator.clipboard.writeText('${t.address}')">${t.address.slice(0,8)}...${t.address.slice(-6)}</td>
+    <td>
+      <div style="display:flex;gap:4px;">
+        <a href="https://axiom.trade/t/${t.address}" target="_blank" class="feed-link feed-link-axiom">⚡ AXIOM</a>
+        <a href="https://gmgn.ai/sol/token/${t.address}" target="_blank" class="feed-link">GMGN</a>
+        <a href="https://dexscreener.com/solana/${t.address}" target="_blank" class="feed-link">DEX</a>
+      </div>
+    </td>
+  </tr>`).join('');
+  
+  const badge = document.getElementById('mig-badge');
+  if (badge) badge.textContent = migrationList.length;
+}
+
+document.getElementById('btn-clear-migrations')?.addEventListener('click', () => {
+  if(confirm("Clear migration history?")) {
+    migrationList = [];
+    localStorage.removeItem('cr_migration_list');
+    renderMigrations();
+  }
+});
+renderMigrations();
+
+// Click on Migration Stat Card to open Migrations Page
+document.getElementById('stat-watching')?.addEventListener('click', () => {
+  document.getElementById('nav-migrations').click();
+});
+document.getElementById('stat-watching').style.cursor = 'pointer';
 
 // ===== THEME TOGGLE =====
 const savedTheme = localStorage.getItem('cr_theme') || 'light';
