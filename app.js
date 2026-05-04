@@ -9,15 +9,30 @@ const API={
   gecko:'https://api.coingecko.com/api/v3/simple/price?ids=solana,bitcoin,ethereum,jupiter-exchange-solana,bonk,dogwifcoin,pepe&vs_currencies=usd&include_24hr_change=true',
 };
 
-// ===== STATE =====
+// ===== STATE WITH LOCALSTORAGE (24H RESET) =====
+const DAY_MS = 24 * 60 * 60 * 1000;
+let sessionStart = parseInt(localStorage.getItem('cr_sessionStart')) || Date.now();
+if (Date.now() - sessionStart > DAY_MS) {
+  // Reset if older than 24 hours
+  sessionStart = Date.now();
+  localStorage.setItem('cr_sessionStart', sessionStart);
+  localStorage.setItem('cr_totalScanned', 0);
+  localStorage.setItem('cr_migrationCount', 0);
+  localStorage.setItem('cr_newTokenCount', 0);
+} else {
+  // Initialize if empty
+  if(!localStorage.getItem('cr_sessionStart')) localStorage.setItem('cr_sessionStart', sessionStart);
+}
+
+let totalScanned = parseInt(localStorage.getItem('cr_totalScanned')) || 0;
+let migrationCount = parseInt(localStorage.getItem('cr_migrationCount')) || 0;
+let newTokenCount = parseInt(localStorage.getItem('cr_newTokenCount')) || 0;
+
 let liveTokens=[];
 let tickerPrices={};
-let totalScanned=0;
 let seenTokens=new Set();
 let wsTokens=[];
 let wsConnected=false;
-let migrationCount=0;
-let newTokenCount=0;
 let sessionLog=[]; // Real event log
 
 // ===== PUMPPORTAL WEBSOCKET (FREE - real-time new tokens + migrations) =====
@@ -54,12 +69,14 @@ function initPumpPortalWS(){
 
 function handleWSEvent(data){
   totalScanned++;
+  localStorage.setItem('cr_totalScanned', totalScanned);
   const el=document.querySelector('#stat-tracked .stat-value');
   if(el)el.textContent=totalScanned.toLocaleString();
 
   // Strict check for migration
   if(data.txType==='migration'||(data.pool&&data.txType!=='create')){
     migrationCount++;
+    localStorage.setItem('cr_migrationCount', migrationCount);
     const token={
       name:data.name||data.symbol||data.mint?.slice(0,6)||'MIGRATED',
       fullName:data.name||'',
@@ -90,6 +107,7 @@ function handleWSEvent(data){
   // Check for new token create
   if(data.txType==='create'||(!data.txType&&data.mint)){
     newTokenCount++;
+    localStorage.setItem('cr_newTokenCount', newTokenCount);
     const token={
       name:data.name||data.symbol||data.mint?.slice(0,6)||'NEW',
       fullName:data.name||'',
