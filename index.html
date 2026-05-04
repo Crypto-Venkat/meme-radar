@@ -61,6 +61,11 @@
                 <span>High Conviction</span>
                 <span class="nav-badge pulse-badge" style="background:#ffd700;color:#0a0e17">HOT</span>
             </a>
+            <a href="#" class="nav-item" data-page="runners" id="nav-runners">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+                <span>Today Runners</span>
+                <span class="nav-badge pulse-badge" style="background:#00d4ff;color:#0a0e17">RUN</span>
+            </a>
             <a href="#" class="nav-item" data-page="migrations" id="nav-migrations">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
                 <span>Migrations</span>
@@ -469,7 +474,37 @@
                     </tbody>
                 </table>
             </div>
+        </div>        <!-- Runners Page -->
+        <div class="page-content" id="page-runners">
+            <div class="alerts-header">
+                <h2>📈 Today's Market Runners</h2>
+                <div class="signals-filters">
+                    <button class="filter-btn runner-filter active" data-range="all">All >300K</button>
+                    <button class="filter-btn runner-filter" data-range="mid">300K - 1M</button>
+                    <button class="filter-btn runner-filter" data-range="high">1M - 5M</button>
+                    <button class="filter-btn runner-filter" data-range="mega">5M+</button>
+                </div>
+            </div>
+            <div class="history-table-container">
+                <table class="scanner-table">
+                    <thead>
+                        <tr>
+                            <th>Token</th>
+                            <th>Market Cap</th>
+                            <th>Price Change (1H)</th>
+                            <th>Volume 1H</th>
+                            <th>Liquidity</th>
+                            <th>Score</th>
+                            <th>Links</th>
+                        </tr>
+                    </thead>
+                    <tbody id="runners-tbody">
+                        <!-- Runner rows injected by JS -->
+                    </tbody>
+                </table>
+            </div>
         </div>
+
         <!-- Migrations Page -->
         <div class="page-content" id="page-migrations">
             <div class="alerts-header">
