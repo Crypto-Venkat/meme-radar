@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CryptoRadar — Memecoin Signal Dashboard</title>
+    <meta name="description" content="Real-time memecoin signal tracking dashboard. Scan 58,000+ tokens, track pump signals, and filter alpha calls.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+</head>
+<body>
+    <!-- Ambient Background Effects -->
+    <div class="ambient-glow ambient-glow-1"></div>
+    <div class="ambient-glow ambient-glow-2"></div>
+    <div class="scanline-overlay"></div>
+
+    <!-- Alert Toast Container -->
+    <div id="alert-toast-container"></div>
+
+    <!-- Mobile Sidebar Overlay -->
+    <div class="sidebar-overlay" id="sidebar-overlay"></div>
+
+    <!-- Sidebar -->
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-logo">
+            <div class="logo-icon">
+                <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
+                    <circle cx="14" cy="14" r="12" stroke="url(#logoGrad)" stroke-width="2.5"/>
+                    <circle cx="14" cy="14" r="6" fill="url(#logoGrad)"/>
+                    <path d="M14 2 L14 6 M14 22 L14 26 M2 14 L6 14 M22 14 L26 14" stroke="url(#logoGrad)" stroke-width="2" stroke-linecap="round"/>
+                    <defs>
+                        <linearGradient id="logoGrad" x1="0" y1="0" x2="28" y2="28">
+                            <stop offset="0%" stop-color="#00ffa3"/>
+                            <stop offset="100%" stop-color="#00d4ff"/>
+                        </linearGradient>
+                    </defs>
+                </svg>
+            </div>
+            <span class="logo-text">CryptoRadar</span>
+        </div>
+
+        <nav class="sidebar-nav">
+            <a href="#" class="nav-item active" data-page="dashboard" id="nav-dashboard">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+                <span>Dashboard</span>
+            </a>
+            <a href="#" class="nav-item" data-page="signals" id="nav-signals">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+                <span>Live Signals</span>
+                <span class="nav-badge pulse-badge">LIVE</span>
+            </a>
+            <a href="#" class="nav-item" data-page="scanner" id="nav-scanner">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+                <span>Token Scanner</span>
+            </a>
+            <a href="#" class="nav-item" data-page="alerts" id="nav-alerts">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+                <span>Alerts</span>
+                <span class="nav-badge-count">3</span>
+            </a>
+            <a href="#" class="nav-item" data-page="history" id="nav-history">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                <span>History</span>
+            </a>
+        </nav>
+
+        <div class="sidebar-wallet">
+            <div class="wallet-status">
+                <span class="wallet-dot" id="ws-dot"></span>
+                <span class="wallet-label">STREAM</span>
+                <span class="wallet-live" id="ws-live">● CONNECTING</span>
+            </div>
+            <div class="wallet-balance">
+                <span class="balance-amount" id="ws-token-count">0</span>
+                <span class="balance-symbol">tokens</span>
+            </div>
+            <div class="wallet-address" id="ws-source">PumpPortal WebSocket</div>
+        </div>
+
+        <div class="sidebar-footer">
+            <a href="#" class="nav-item" id="nav-settings">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
+                <span>Settings</span>
+            </a>
+        </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main-content" id="main-content">
+        <!-- Top Bar -->
+        <header class="top-bar">
+            <div class="top-bar-left">
+                <button class="menu-toggle" id="menu-toggle">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+                </button>
+                <div class="page-title">
+                    <h1 id="page-heading">Dashboard</h1>
+                    <span class="page-subtitle">Market overview</span>
+                </div>
+            </div>
+            <div class="top-bar-right">
+                <div class="ticker-bar" id="ticker-bar">
+                    <div class="ticker-content" id="ticker-content"></div>
+                </div>
+                <div class="top-bar-actions">
+                    <span class="live-clock" id="live-clock"></span>
+                    <button class="btn-icon btn-insider" id="btn-insider">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"/></svg>
+                        Insider
+                    </button>
+                    <button class="btn-icon btn-refresh" id="btn-refresh">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+                        Refresh
+                    </button>
+                    <button class="btn-icon btn-sound" id="btn-sound" title="Toggle alert sounds">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <!-- Dashboard Page -->
+        <div class="page-content active" id="page-dashboard">
+            <!-- Stats Row -->
+            <div class="stats-row">
+                <div class="stat-card stat-card-glow" id="stat-tracked">
+                    <div class="stat-value" id="stat-tracked-val">0</div>
+                    <div class="stat-label">Total Tracked</div>
+                    <div class="stat-trend stat-trend-up" id="stat-tracked-trend">Starting...</div>
+                </div>
+                <div class="stat-card" id="stat-watching">
+                    <div class="stat-value stat-highlight-yellow" id="stat-watching-val">0</div>
+                    <div class="stat-label">Migrations</div>
+                    <div class="stat-trend stat-trend-neutral" id="stat-watching-trend">Graduated tokens</div>
+                </div>
+                <div class="stat-card" id="stat-rugged">
+                    <div class="stat-value stat-highlight-red">21%</div>
+                    <div class="stat-label">Rugged Today</div>
+                    <div class="stat-trend stat-trend-down">↑ 3% from yesterday</div>
+                </div>
+                <div class="stat-card" id="stat-mood">
+                    <div class="stat-value stat-highlight-green counter" data-target="81">0</div>
+                    <div class="stat-label">Market Mood</div>
+                    <div class="stat-trend stat-trend-warning">⚠️ Risky</div>
+                </div>
+            </div>
+
+            <!-- Market Sentiment -->
+            <div class="card sentiment-card" id="sentiment-card">
+                <div class="card-header">
+                    <div>
+                        <h3 class="card-title">Market Sentiment</h3>
+                        <p class="card-subtitle">Live tracking from 200+ tokens</p>
+                    </div>
+                    <div class="sentiment-score">
+                        <span class="sentiment-value" id="sentiment-value">81</span>
+                        <span class="sentiment-label risky" id="sentiment-label">RISKY</span>
+                    </div>
+                </div>
+                <div class="sentiment-bar-container">
+                    <div class="sentiment-bar">
+                        <div class="sentiment-fill" id="sentiment-fill" style="width: 81%"></div>
+                        <div class="sentiment-pointer" id="sentiment-pointer" style="left: 81%"></div>
+                    </div>
+                    <div class="sentiment-labels">
+                        <span>Extreme Fear</span>
+                        <span>Fear</span>
+                        <span>Neutral</span>
+                        <span>Greed</span>
+                        <span>Extreme Greed</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Hottest Meta -->
+            <div class="card meta-card" id="meta-card">
+                <div class="card-header">
+                    <div>
+                        <h3 class="card-title">🔥 Hottest Meta</h3>
+                        <p class="card-subtitle">Trending theme right now</p>
+                    </div>
+                    <span class="meta-badge mixed" id="meta-status">MIXED</span>
+                </div>
+                <div class="meta-tags" id="meta-tags">
+                    <span class="meta-tag hot">AI Agents</span>
+                    <span class="meta-tag warm">Cat Memes</span>
+                    <span class="meta-tag warm">Political</span>
+                    <span class="meta-tag cool">DeFi Forks</span>
+                    <span class="meta-tag dead">Dog Coins</span>
+                </div>
+            </div>
+
+            <!-- Signal Outcomes -->
+            <div class="card outcomes-card" id="outcomes-card">
+                <h3 class="card-title">SIGNAL OUTCOMES · LIVE SESSION</h3>
+                <div class="outcomes-grid">
+                    <div class="outcome-item outcome-moon">
+                        <div class="outcome-icon">🌙</div>
+                        <div class="outcome-value counter" data-target="27">0</div>
+                        <div class="outcome-label">Went Moon</div>
+                    </div>
+                    <div class="outcome-item outcome-running">
+                        <div class="outcome-icon">🚀</div>
+                        <div class="outcome-value counter" data-target="24">0</div>
+                        <div class="outcome-label">Running</div>
+                    </div>
+                    <div class="outcome-item outcome-decent">
+                        <div class="outcome-icon">📊</div>
+                        <div class="outcome-value counter" data-target="5">0</div>
+                        <div class="outcome-label">Decent</div>
+                    </div>
+                    <div class="outcome-item outcome-nowhere">
+                        <div class="outcome-icon">➖</div>
+                        <div class="outcome-value counter" data-target="23">0</div>
+                        <div class="outcome-label">Nowhere</div>
+                    </div>
+                    <div class="outcome-item outcome-dumped">
+                        <div class="outcome-icon">📉</div>
+                        <div class="outcome-value counter" data-target="1">0</div>
+                        <div class="outcome-label">Dumped</div>
+                    </div>
+                    <div class="outcome-item outcome-rugged">
+                        <div class="outcome-icon">💀</div>
+                        <div class="outcome-value counter" data-target="5">0</div>
+                        <div class="outcome-label">Rugged</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Two Column Layout -->
+            <div class="two-col-layout">
+                <!-- Equity Curve -->
+                <div class="card chart-card" id="chart-card">
+                    <div class="card-header">
+                        <h3 class="card-title">● EQUITY CURVE · 7D</h3>
+                        <div class="chart-toggles">
+                            <button class="chart-toggle active" data-range="sol">SOL</button>
+                            <button class="chart-toggle" data-range="usd">USD</button>
+                        </div>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="equity-chart"></canvas>
+                    </div>
+                    <div class="chart-stats">
+                        <div class="chart-stat">
+                            <span class="chart-stat-label">New Tokens</span>
+                            <span class="chart-stat-value positive" id="cs-new">0</span>
+                            <span class="chart-stat-sub">This session</span>
+                        </div>
+                        <div class="chart-stat">
+                            <span class="chart-stat-label">Migrations</span>
+                            <span class="chart-stat-value positive" id="cs-mig">0</span>
+                            <span class="chart-stat-sub">Graduated tokens</span>
+                        </div>
+                        <div class="chart-stat">
+                            <span class="chart-stat-label">WS Events/min</span>
+                            <span class="chart-stat-value" id="cs-rate">0</span>
+                            <span class="chart-stat-sub">Current rate</span>
+                        </div>
+                        <div class="chart-stat">
+                            <span class="chart-stat-label">Uptime</span>
+                            <span class="chart-stat-value" id="cs-uptime">0m</span>
+                            <span class="chart-stat-sub">Session length</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Bot Status & PnL -->
+                <div class="right-col">
+                    <!-- Session Stats -->
+                    <div class="card pnl-card" id="pnl-card">
+                        <div class="pnl-header">
+                            <span class="pnl-label">SESSION STATS</span>
+                            <span class="pnl-badge positive" id="pnl-badge">● LIVE</span>
+                        </div>
+                        <div class="pnl-value positive" id="pnl-value">0 Tokens Scanned</div>
+                        <div class="pnl-usd" id="pnl-usd">Loading SOL price...</div>
+                        <div class="pnl-row">
+                            <div class="pnl-stat">
+                                <span class="pnl-stat-label">Migrations</span>
+                                <span class="pnl-stat-value" id="pnl-mig">0</span>
+                            </div>
+                            <div class="pnl-stat">
+                                <span class="pnl-stat-label">New Tokens</span>
+                                <span class="pnl-stat-value" id="pnl-new">0</span>
+                            </div>
+                            <div class="pnl-stat">
+                                <span class="pnl-stat-label">WS Status</span>
+                                <span class="pnl-stat-value" id="pnl-ws-status">Connecting...</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Connection Status -->
+                    <div class="card bot-card" id="bot-card">
+                        <div class="card-header">
+                            <h3 class="card-title">● DATA SOURCES</h3>
+                            <span class="bot-health healthy" id="ds-health">● HEALTHY</span>
+                        </div>
+                        <div class="bot-info">
+                            <div class="bot-row">
+                                <span>PumpPortal WS</span>
+                                <span class="bot-val" id="ds-pump">Connecting...</span>
+                            </div>
+                            <div class="bot-row">
+                                <span>DexScreener API</span>
+                                <span class="bot-val enabled">ACTIVE</span>
+                            </div>
+                            <div class="bot-row">
+                                <span>CoinGecko API</span>
+                                <span class="bot-val enabled">ACTIVE</span>
+                            </div>
+                            <div class="bot-row">
+                                <span>Trending Metas</span>
+                                <span class="bot-val enabled">ACTIVE</span>
+                            </div>
+                            <div class="bot-row">
+                                <span>Uptime</span>
+                                <span class="bot-val" id="ds-uptime">0m</span>
+                            </div>
+                            <div class="bot-row">
+                                <span>Events/min</span>
+                                <span class="bot-val" id="ds-rate">0</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Live Signal Feed -->
+            <div class="card feed-card" id="feed-card">
+                <div class="card-header">
+                    <h3 class="card-title">
+                        <span class="feed-dot"></span>
+                        LIVE SIGNAL FEED
+                    </h3>
+                    <div class="feed-meta">
+                        <span class="feed-badge listening">● LISTENING · 5 CHANNELS</span>
+                    </div>
+                </div>
+                <div class="feed-list" id="feed-list">
+                    <!-- Signals will be injected by JS -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Signals Page -->
+        <div class="page-content" id="page-signals">
+            <div class="signals-header">
+                <h2>Live Alpha Signals</h2>
+                <div class="signals-filters">
+                    <button class="filter-btn active" data-filter="all">All</button>
+                    <button class="filter-btn" data-filter="high">High Conviction</button>
+                    <button class="filter-btn" data-filter="medium">Medium</button>
+                    <button class="filter-btn" data-filter="low">Low</button>
+                </div>
+            </div>
+            <div class="signals-grid" id="signals-grid">
+                <!-- Signal cards will be injected by JS -->
+            </div>
+        </div>
+
+        <!-- Scanner Page -->
+        <div class="page-content" id="page-scanner">
+            <div class="scanner-header">
+                <h2>Token Scanner</h2>
+                <div class="scanner-status">
+                    <span class="scanner-pulse"></span>
+                    <span>Scanning... <span id="scan-count">58,020</span> tokens tracked</span>
+                </div>
+            </div>
+            <div class="scanner-filters">
+                <div class="filter-group">
+                    <label>Min Market Cap</label>
+                    <select id="filter-mcap">
+                        <option value="0">Any</option>
+                        <option value="10000">$10K+</option>
+                        <option value="50000" selected>$50K+</option>
+                        <option value="100000">$100K+</option>
+                        <option value="500000">$500K+</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label>Min Score</label>
+                    <select id="filter-score">
+                        <option value="0">Any</option>
+                        <option value="50">50+</option>
+                        <option value="70">70+</option>
+                        <option value="85" selected>85+</option>
+                        <option value="95">95+</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label>Chain</label>
+                    <select id="filter-chain">
+                        <option value="all">All Chains</option>
+                        <option value="sol" selected>Solana</option>
+                        <option value="eth">Ethereum</option>
+                        <option value="base">Base</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label>Age</label>
+                    <select id="filter-age">
+                        <option value="all">Any</option>
+                        <option value="1h">< 1 hour</option>
+                        <option value="6h" selected>< 6 hours</option>
+                        <option value="24h">< 24 hours</option>
+                    </select>
+                </div>
+                <button class="btn-scan" id="btn-scan">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+                    Scan Now
+                </button>
+            </div>
+            <div class="scanner-results" id="scanner-results">
+                <table class="scanner-table">
+                    <thead>
+                        <tr>
+                            <th>Token</th>
+                            <th>Score</th>
+                            <th>Conviction</th>
+                            <th>Market Cap</th>
+                            <th>Age</th>
+                            <th>Holders</th>
+                            <th>Volume 1H</th>
+                            <th>Links</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="scanner-tbody">
+                        <!-- Rows injected by JS -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Alerts Page -->
+        <div class="page-content" id="page-alerts">
+            <div class="alerts-header">
+                <h2>Alert Center</h2>
+                <button class="btn-clear-alerts" id="btn-clear-alerts">Clear All Read</button>
+            </div>
+            <div class="alerts-list" id="alerts-list">
+                <!-- Alerts injected by JS -->
+            </div>
+        </div>
+
+        <!-- History Page -->
+        <div class="page-content" id="page-history">
+            <div class="history-header">
+                <h2>Session Log</h2>
+                <div class="history-summary">
+                    <div class="history-stat">
+                        <span class="history-stat-val positive" id="hist-total">0</span>
+                        <span class="history-stat-label">Total Events</span>
+                    </div>
+                    <div class="history-stat">
+                        <span class="history-stat-val" id="hist-mig">0</span>
+                        <span class="history-stat-label">Migrations</span>
+                    </div>
+                    <div class="history-stat">
+                        <span class="history-stat-val positive" id="hist-rate">0/min</span>
+                        <span class="history-stat-label">Event Rate</span>
+                    </div>
+                </div>
+            </div>
+            <div class="history-table-container">
+                <table class="scanner-table">
+                    <thead>
+                        <tr>
+                            <th>Time</th>
+                            <th>Token</th>
+                            <th>Type</th>
+                            <th>CA</th>
+                            <th>DEX</th>
+                            <th>Links</th>
+                        </tr>
+                    </thead>
+                    <tbody id="history-tbody">
+                        <!-- Real events injected by JS -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+
+    <script src="app.js"></script>
+</body>
+</html>
