@@ -686,6 +686,16 @@ setInterval(async()=>{
   if(hot){addAlert('🚨',`${hot.name} scored ${hot.score}/100`,`MCap: ${fmtUsd(hot.mcap)} · Vol: ${fmtUsd(hot.volume)} · ${hot.priceChange>=0?'+':''}${hot.priceChange}% 1H`)}
 },45000);
 
+// ===== THEME TOGGLE =====
+const savedTheme = localStorage.getItem('cr_theme') || 'light';
+if (savedTheme === 'dark') document.body.classList.add('dark-theme');
+
+document.getElementById('btn-theme')?.addEventListener('click', () => {
+  document.body.classList.toggle('dark-theme');
+  const isDark = document.body.classList.contains('dark-theme');
+  localStorage.setItem('cr_theme', isDark ? 'dark' : 'light');
+});
+
 // ===== REFRESH BUTTON =====
 document.getElementById('btn-refresh').addEventListener('click',async()=>{
   const btn=document.getElementById('btn-refresh');
