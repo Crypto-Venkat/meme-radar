@@ -688,11 +688,11 @@ setInterval(async()=>{
 
 // ===== THEME TOGGLE =====
 const savedTheme = localStorage.getItem('cr_theme') || 'light';
-if (savedTheme === 'dark') document.body.classList.add('dark-theme');
+if (savedTheme === 'dark') document.documentElement.classList.add('dark-theme');
 
 document.getElementById('btn-theme')?.addEventListener('click', () => {
-  document.body.classList.toggle('dark-theme');
-  const isDark = document.body.classList.contains('dark-theme');
+  document.documentElement.classList.toggle('dark-theme');
+  const isDark = document.documentElement.classList.contains('dark-theme');
   localStorage.setItem('cr_theme', isDark ? 'dark' : 'light');
 });
 
