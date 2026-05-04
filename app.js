@@ -215,7 +215,6 @@ function updateHistoryPage(){
   if(histRate)histRate.textContent=Math.round(sessionLog.length/uptimeMin)+'/min';
 }
 
-const sessionStart=Date.now();
 
 // Start WebSocket connection
 initPumpPortalWS();
@@ -678,7 +677,8 @@ document.getElementById('btn-refresh').addEventListener('click',async()=>{
 });
 
 // ===== REAL-TIME STATS UPDATE LOOP =====
-setInterval(()=>{
+// ===== REAL-TIME STATS UPDATE LOOP =====
+function updateRealtimeStats(){
   const stv=document.getElementById('stat-tracked-val');
   if(stv)stv.textContent=totalScanned.toLocaleString();
   const stt=document.getElementById('stat-tracked-trend');
@@ -713,7 +713,10 @@ setInterval(()=>{
   if(dsUp){const m=Math.floor(uptimeMin);dsUp.textContent=m<60?m+'m':Math.floor(m/60)+'h '+m%60+'m'}
   const dsRate=document.getElementById('ds-rate');
   if(dsRate)dsRate.textContent=Math.round(totalScanned/uptimeMin)+'/min';
-},3000);
+}
+// Call immediately so it doesn't show 0 on page load
+updateRealtimeStats();
+setInterval(updateRealtimeStats,3000);
 
 const s=document.createElement('style');
 s.textContent='.positive{color:var(--green)}.negative{color:var(--red)}';
