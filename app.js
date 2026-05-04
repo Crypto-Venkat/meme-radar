@@ -155,6 +155,7 @@ function handleWSEvent(data){
 }
 
 function addLiveFeedItem(t){
+  if(t.score < 65) return; // Skip low tokens
   const list=document.getElementById('feed-list');
   if(!list)return;
   const scoreClass=t.score>=85?'high':t.score>=65?'med':'low';
@@ -403,8 +404,12 @@ async function fetchTrendingTokens(){
 
 // ===== LIVE SIGNAL FEED - Real data =====
 async function refreshFeed(){
-  const tokens=await fetchTrendingTokens();
+  let tokens=await fetchTrendingTokens();
   if(!tokens.length)return;
+  
+  // Filter out low tokens (<65 score)
+  tokens = tokens.filter(t => t.score >= 65);
+  
   liveTokens=tokens;
   const list=document.getElementById('feed-list');
   list.innerHTML=tokens.slice(0,12).map((t,i)=>{
